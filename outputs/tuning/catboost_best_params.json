@@ -1,0 +1,103 @@
+{
+  "experiment_name": "Experiment 1: CatBoost Hyperparameter Optimization",
+  "random_seed": 42,
+  "selection_metric": "Minimum Validation Cost (FP=INR 5, FN=INR 500) with Tie-Breaking (Recall -> F1 -> Threshold)",
+  "best_candidate": {
+    "trial_id": "T13_Iter_1200_LR_015",
+    "group": "Iters & LR",
+    "description": "Conservative lr=0.015 with 1200 iters",
+    "hyperparameters": {
+      "iterations": 1200,
+      "depth": 6,
+      "learning_rate": 0.015,
+      "l2_leaf_reg": 5.0,
+      "random_strength": 1.0,
+      "border_count": 254,
+      "class_weighting": "Balanced",
+      "early_stopping_rounds": 0
+    },
+    "validation_performance": {
+      "optimal_decision_threshold": 0.065,
+      "total_cost_hypothetical_inr": 5740.0,
+      "average_cost_per_tx_inr": 0.13436,
+      "val_pr_auc": 0.806194,
+      "val_roc_auc": 0.980697,
+      "recall": 0.8649,
+      "precision": 0.3019,
+      "f1_score": 0.4476,
+      "accuracy": 0.996302,
+      "tp": 64,
+      "fp": 148,
+      "fn": 10,
+      "tn": 42499,
+      "flagged_transactions": 212
+    }
+  },
+  "baseline_comparison": {
+    "baseline_trial_id": "T01_Baseline",
+    "cost_delta_inr": -185.0,
+    "cost_reduction_percentage": 3.12,
+    "pr_auc_delta": 0.0066,
+    "recall_delta": 0.0135,
+    "precision_delta": -0.1238,
+    "false_negative_reduction": 1,
+    "false_positive_reduction": -63
+  },
+  "findings_and_honest_assessment": {
+    "did_tuning_improve_cost": true,
+    "did_tuning_improve_pr_auc": true,
+    "summary_verdict": "Tuning achieved a minimum validation cost of INR 5,740.00 (vs baseline INR 5,925.00, a delta of INR -185.00) and a PR-AUC of 0.8062 (vs baseline 0.7996)."
+  },
+  "all_top_5_candidates": [
+    {
+      "trial_id": "T13_Iter_1200_LR_015",
+      "group": "Iters & LR",
+      "val_pr_auc": 0.806194,
+      "val_roc_auc": 0.980697,
+      "optimal_threshold": 0.065,
+      "recall": 0.8649,
+      "precision": 0.3019,
+      "total_cost": 5740.0
+    },
+    {
+      "trial_id": "T19_Border_64",
+      "group": "Border Count",
+      "val_pr_auc": 0.812715,
+      "val_roc_auc": 0.979364,
+      "optimal_threshold": 0.06,
+      "recall": 0.8649,
+      "precision": 0.2909,
+      "total_cost": 5780.0
+    },
+    {
+      "trial_id": "T16_Reg_L2_5_RS_05",
+      "group": "Regularization",
+      "val_pr_auc": 0.80541,
+      "val_roc_auc": 0.975161,
+      "optimal_threshold": 0.177,
+      "recall": 0.8514,
+      "precision": 0.5081,
+      "total_cost": 5805.0
+    },
+    {
+      "trial_id": "T09_Iter_300_LR_12",
+      "group": "Iters & LR",
+      "val_pr_auc": 0.823134,
+      "val_roc_auc": 0.959955,
+      "optimal_threshold": 0.142,
+      "recall": 0.8514,
+      "precision": 0.4884,
+      "total_cost": 5830.0
+    },
+    {
+      "trial_id": "T01_Baseline",
+      "group": "Baseline",
+      "val_pr_auc": 0.799566,
+      "val_roc_auc": 0.976391,
+      "optimal_threshold": 0.144,
+      "recall": 0.8514,
+      "precision": 0.4257,
+      "total_cost": 5925.0
+    }
+  ]
+}

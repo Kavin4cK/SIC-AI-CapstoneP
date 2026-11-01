@@ -1,0 +1,95 @@
+{
+  "dataset_fraud_prevalence": 0.0017321691907960957,
+  "brier_score_naive_baseline": 0.0017291687806905525,
+  "uncalibrated_brier_scores_full_val": {
+    "lightgbm": 0.0008073993939889343,
+    "catboost": 0.0008981197108607015
+  },
+  "mean_predicted_probabilities_full_val": {
+    "lightgbm": 0.0015462800519853849,
+    "catboost": 0.003244625414966353
+  },
+  "cross_split_calibration_experiment": {
+    "calibration_samples": 21360,
+    "evaluation_samples": 21361,
+    "lightgbm": {
+      "uncalibrated_brier_score": 0.0007337562243944347,
+      "isotonic_calibrated_brier_score": 0.0006927567611272993,
+      "brier_improvement_pct": 5.587613692949866
+    },
+    "catboost": {
+      "uncalibrated_brier_score": 0.0007587658914971762,
+      "isotonic_calibrated_brier_score": 0.0005455606570348029,
+      "brier_improvement_pct": 28.098948154045583
+    }
+  },
+  "reliability_curve_quantile_bins": {
+    "lightgbm": {
+      "prob_pred": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1e-06,
+        1e-06,
+        1e-06,
+        2e-06,
+        0.015457
+      ],
+      "prob_true": [
+        0.000234,
+        0.0,
+        0.0,
+        0.0,
+        0.000234,
+        0.0,
+        0.0,
+        0.000468,
+        0.000702,
+        0.015684
+      ]
+    },
+    "catboost": {
+      "prob_pred": [
+        2e-06,
+        6e-06,
+        1.3e-05,
+        2.5e-05,
+        4.4e-05,
+        8.1e-05,
+        0.000162,
+        0.000357,
+        0.000963,
+        0.030794
+      ],
+      "prob_true": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.000234,
+        0.0,
+        0.000234,
+        0.000468,
+        0.000468,
+        0.015918
+      ]
+    }
+  },
+  "calibration_methodology": {
+    "validation_holdout_split": {
+      "description": "Disjoint 50/50 partition of the 42,721 validation transactions into calibrator fitting and evaluation subsets.",
+      "random_state": 42,
+      "total_validation_rows": 42721,
+      "fitting_rows": 21360,
+      "evaluation_rows": 21361,
+      "observation_reuse": "Zero observation reuse: fitting and evaluation sets are strictly disjoint indices."
+    },
+    "fitting_procedure": "Isotonic Regression (sklearn.isotonic.IsotonicRegression with out_of_bounds='clip') fitted exclusively on the 21,360 fitting rows mapping raw model probabilities to binary labels y_cal.",
+    "evaluation_procedure": "Calibrator evaluated exclusively on the held-out 21,361 evaluation rows (p_eval, y_eval).",
+    "brier_score_formula": "Brier Score = (1 / N) * sum((p_i - y_i)^2), measuring the mean squared error between predicted probabilities and actual binary outcomes. Lower is better. Baseline naive brier = base_rate * (1 - base_rate) = 0.00173.",
+    "distortion_source_and_strategy": "CatBoost trained with auto_class_weights='Balanced' artificially shifts output scores upwards (mean predicted 0.0032 vs base rate 0.00173). Direct empirical threshold search on raw scores (0.144) bypasses distortion because monotonicity is preserved. Post-hoc isotonic calibration provides calibrated probabilities (reducing Brier score by 28.1%) for downstream interpretability without altering ranking."
+  },
+  "calibration_observations": "1. CatBoost was trained with auto_class_weights='Balanced', which shifts uncalibrated output probabilities upward (mean = 0.0032 vs base rate 0.00173). This causes its empirical optimal threshold under S2 (0.144) to differ from the theoretical Bayes threshold (~0.0099). 2. LightGBM (scale_pos_weight=5.0) yields an empirical optimal threshold of 0.006. 3. Isotonic calibration on a 50% validation holdout reduces Brier score significantly (CatBoost: 0.000759 -> 0.000546, a 28.1% improvement). 4. Empirical threshold search directly on the uncalibrated probabilities remains robust, bypassing probability distortion while preserving ranking order."
+}

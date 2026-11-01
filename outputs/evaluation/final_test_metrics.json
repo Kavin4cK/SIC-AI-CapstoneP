@@ -1,0 +1,100 @@
+{
+  "evaluation_partition": "test",
+  "sample_size": 42722,
+  "fraud_cases": 74,
+  "genuine_cases": 42648,
+  "fraud_prevalence": 0.001732,
+  "model": "CatBoost",
+  "model_artifact": "models/catboost_model.cbm",
+  "decision_threshold_frozen": 0.144,
+  "cost_matrix_hypothetical": {
+    "c_fp": 5.0,
+    "c_fn": 500.0,
+    "c_tp": 0.0,
+    "c_tn": 0.0,
+    "disclaimer": "Academic hypothetical assumptions; not real institutional loss figures."
+  },
+  "performance_metrics": {
+    "accuracy": 0.998104,
+    "precision": 0.473684,
+    "recall": 0.851351,
+    "f1_score": 0.608696,
+    "pr_auc": 0.829777,
+    "roc_auc": 0.971018
+  },
+  "confusion_matrix": {
+    "tp": 63,
+    "fp": 70,
+    "fn": 11,
+    "tn": 42578,
+    "flagged_transactions": 133
+  },
+  "financial_cost_evaluation": {
+    "total_cost_hypothetical_inr": 5850.0,
+    "average_cost_per_tx_inr": 0.136932,
+    "cost_breakdown": {
+      "fp_investigation_cost_total": 350.0,
+      "fn_missed_fraud_cost_total": 5500.0
+    }
+  },
+  "validation_vs_test_comparison": {
+    "validation": {
+      "sample_size": 42721,
+      "fraud_cases": 74,
+      "precision": 0.4257,
+      "recall": 0.8514,
+      "f1_score": 0.5676,
+      "pr_auc": 0.7996,
+      "roc_auc": 0.984,
+      "total_cost_inr": 5925.0,
+      "avg_cost_per_tx_inr": 0.138691,
+      "tp": 63,
+      "fp": 85,
+      "fn": 11,
+      "tn": 42562
+    },
+    "test": {
+      "sample_size": 42722,
+      "fraud_cases": 74,
+      "precision": 0.4737,
+      "recall": 0.8514,
+      "f1_score": 0.6087,
+      "pr_auc": 0.8298,
+      "roc_auc": 0.971,
+      "total_cost_inr": 5850.0,
+      "avg_cost_per_tx_inr": 0.136932,
+      "tp": 63,
+      "fp": 70,
+      "fn": 11,
+      "tn": 42578
+    },
+    "generalization_notes": "The test-set performance aligns closely with validation results, verifying that the model and cost-sensitive threshold generalize robustly without overfitting to the validation partition."
+  },
+  "classification_report": {
+    "Genuine": {
+      "precision": 0.9997417173448543,
+      "recall": 0.9983586569123992,
+      "f1-score": 0.9990497084599411,
+      "support": 42648.0
+    },
+    "Fraud": {
+      "precision": 0.47368421052631576,
+      "recall": 0.8513513513513513,
+      "f1-score": 0.6086956521739131,
+      "support": 74.0
+    },
+    "accuracy": 0.9981040213473152,
+    "macro avg": {
+      "precision": 0.736712963935585,
+      "recall": 0.9248550041318753,
+      "f1-score": 0.8038726803169272,
+      "support": 42722.0
+    },
+    "weighted avg": {
+      "precision": 0.9988305180680279,
+      "recall": 0.9981040213473152,
+      "f1-score": 0.9983735650170976,
+      "support": 42722.0
+    }
+  }
+}

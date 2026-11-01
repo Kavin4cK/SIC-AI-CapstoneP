@@ -1,0 +1,25 @@
+======================================================================
+PHASE 2 MODEL EVALUATION: CLASSIFICATION REPORTS (VALIDATION SET)
+======================================================================
+
+--- 1. LIGHTGBM CLASSIFIER ---
+              precision    recall  f1-score   support
+
+     Genuine     0.9995    0.9996    0.9996     42647
+       Fraud     0.7727    0.6892    0.7286        74
+
+    accuracy                         0.9991     42721
+   macro avg     0.8861    0.8444    0.8641     42721
+weighted avg     0.9991    0.9991    0.9991     42721
+
+
+--- 2. CATBOOST CLASSIFIER ---
+              precision    recall  f1-score   support
+
+     Genuine     0.9997    0.9993    0.9995     42647
+       Fraud     0.6854    0.8243    0.7485        74
+
+    accuracy                         0.9990     42721
+   macro avg     0.8425    0.9118    0.8740     42721
+weighted avg     0.9992    0.9990    0.9991     42721
+

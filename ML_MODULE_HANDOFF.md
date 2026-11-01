@@ -14,11 +14,14 @@ This document specifies the technical interface, data schemas, operational seman
 The ML module is responsible for:
 1. Ingesting raw credit card transaction data.
 2. Applying leakage-free preprocessing (fitted exclusively on training data).
-3. Scoring transactions with the production **CatBoost Classifier** (`models/catboost_model.cbm`).
+3. Scoring transactions with the benchmark **CatBoost Classifier** (`models/catboost_model.cbm`).
 4. Applying the cost-optimized decision threshold ($t^* = 0.144$) derived from hypothetical financial loss minimization.
 5. Outputting a clean, traceable set of flagged suspicious transactions identified by unique, persistent `TransactionID`s **strictly without ground-truth labels**.
 
 The downstream module is responsible for assessing flagged transactions, generating contextual explanations via an LLM judge, and recording operator feedback for future continuous learning loops.
+
+> [!NOTE]
+> **Scope & Deployment Boundary**: This ML module operates as an academic and methodological benchmark for cost-sensitive learning and ML-to-LLM handoff. It is not an online core banking authorization switch. Real-world financial deployment necessitates real-time telemetry, device intelligence, IP geolocation, fraud velocity counters, and low-latency streaming infrastructure (sub-50ms SLA) not present in anonymized PCA datasets.
 
 ---
 
@@ -117,7 +120,7 @@ When constructing prompts for the LLM-as-a-judge module, adhere to the following
 
 ## 6. Reusable Inference API for Live & Batch Prediction
 
-The ML module provides a production-grade inference engine (`src/predict.py`).
+The ML module provides an end-to-end inference engine (`src/predict.py`).
 
 ### 6.1 Python Programmatic API
 ```python
@@ -185,9 +188,9 @@ This log will be consumed during scheduled model retraining to continuously upda
 | **Model** | CatBoost (`models/catboost_model.cbm`) | CatBoost (`models/catboost_model.cbm`) |
 | **Decision Threshold** | 0.1440 | 0.1440 |
 | **PR-AUC (Average Precision)** | 0.7996 | **0.8298** |
-| **ROC-AUC** | 0.9840 | **0.9710** |
+| **ROC-AUC** | 0.9764 | **0.9710** |
 | **Accuracy** | 99.78% | **99.81%** |
-| **Fraud Recall** | **85.14%** (63/74 frauds) | **85.14%** (63/74 frauds) |
+| **Fraud Recall** | **85.14%** (63/74 frauds) | **85.14%** (63/74 frauds)* |
 | **Fraud Precision** | 42.57% | **47.37%** |
 | **Fraud F1-Score** | 0.5676 | **0.6087** |
 | **True Positives (TP)** | 63 | 63 |
@@ -197,6 +200,8 @@ This log will be consumed during scheduled model retraining to continuously upda
 | **Total Review Volume (Flagged)** | 148 (0.35%) | **133 (0.31%)** |
 | **Total Hypothetical Cost (₹5/₹500)** | INR 5,925.00 | **INR 5,850.00** |
 | **Average Cost per Transaction** | INR 0.138691 | **INR 0.136932** |
+
+*\*Statistical Note on Recall: The identical point recall (63/74 = 85.14%) across partitions is an empirical observation on this partition. For N=74 fraud cases, the 95% Wilson confidence interval is [75.3%, 91.6%], with bootstrap standard deviation of ±5.07%, reflecting consistent partition performance rather than theoretical invariance.*
 
 ---
 *For questions or integration support regarding the ML module, refer to [`README.md`](file:///c:/Users/A%20S%20Nemitha/Desktop/SIC-Capstone%20Project/README.md) or run `pytest tests/`.*

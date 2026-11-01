@@ -6,7 +6,7 @@
 [![Tests: 12 Passed](https://img.shields.io/badge/tests-12%20passed-brightgreen.svg)]()
 [![Model: CatBoost](https://img.shields.io/badge/model-CatBoost%200.144-orange.svg)]()
 
-This repository contains the complete, production-ready Machine Learning module for the **Cost-Sensitive Credit Card Fraud Detection System**. 
+This repository contains the complete Machine Learning module and experimental benchmark for the **Cost-Sensitive Credit Card Fraud Detection System**. 
 
 The system transitions from naive statistical cutoffs (such as default 0.5 probability thresholds) to an asymmetric, cost-optimal decision policy designed to minimize financial loss. It outputs flagged suspicious transactions with persistent transaction IDs for downstream evaluation by an **LLM-as-a-judge** and **human operator review feedback loop**.
 
@@ -17,6 +17,7 @@ The system transitions from naive statistical cutoffs (such as default 0.5 proba
 > 1. **Hypothetical Cost Assumptions**: All cost values, cost matrices, and financial metrics (e.g. ₹5 per alert review, ₹500 per missed fraud) are **hypothetical assumptions formulated strictly for academic experimentation and methodology benchmarking**. They do NOT represent actual bank transaction losses, verified institutional chargebacks, or real banking operational cost structures.
 > 2. **Suspicious Alerts Disclaimer**: Flagged transactions are classified as `SUSPICIOUS_PENDING_REVIEW`. They represent statistical anomalies and elevated risk alerts requiring operator/LLM verification, **NOT confirmed fraudulent transactions**.
 > 3. **Dataset Features & PCA Limitations**: Features `V1` through `V28` are anonymized principal components obtained via PCA. The `Time` feature represents elapsed seconds from the first recorded transaction (0 to 172,792 seconds across 48 consecutive hours), **NOT clock timestamps (e.g., 02:00 AM)**. Identical duplicate feature profiles cannot be given a definitive real-world interpretation from this anonymized benchmark dataset.
+> 4. **Academic Benchmark Scope vs. Real-World Banking Production**: This codebase provides a reproducible machine learning benchmark and reference implementation for cost-sensitive threshold optimization and ML-to-LLM handoff. It is **not** an end-to-end real-time core banking authorization engine. Production payment switch deployment requires sub-50ms streaming latency SLAs, streaming feature stores, fraud velocity aggregators, device fingerprint telemetry, IP reputation, cardholder behavioral profiles, and integration with card network clearing protocols (e.g., ISO 8583/20022), which are absent from this anonymized tabular PCA dataset.
 
 ---
 
@@ -194,9 +195,9 @@ The baseline model (**CatBoost Classifier** at frozen decision threshold **$t^* 
 | **Fraud Cases** | 74 (0.1732%) | **74 (0.1732%)** | Matched |
 | **Decision Threshold** | 0.1440 (Selected) | **0.1440 (Frozen)** | Frozen Policy |
 | **PR-AUC (Average Precision)** | 0.7996 | **0.8298** | **+3.02% (Stronger generalization)** |
-| **ROC-AUC** | 0.9840 | **0.9710** | Robust discrimination |
+| **ROC-AUC** | 0.9764 | **0.9710** | Robust discrimination |
 | **Accuracy** | 99.78% | **99.81%** | Consistent |
-| **Fraud Recall** | **85.14%** (63/74) | **85.14%** (63/74) | **Exact Match (100% stable)** |
+| **Fraud Recall** | **85.14%** (63/74) | **85.14%** (63/74) | **Empirical Match** (Wilson 95% CI: [75.3%, 91.6%]; bootstrap std: ±5.07%) |
 | **Fraud Precision** | 42.57% (63/148) | **47.37%** (63/133) | **+4.80% (Fewer false alarms)** |
 | **Fraud F1-Score** | 0.5676 | **0.6087** | **+4.11% (Superior trade-off)** |
 | **True Positives (TP)** | 63 | **63** | Consistent fraud capture |
@@ -206,6 +207,9 @@ The baseline model (**CatBoost Classifier** at frozen decision threshold **$t^* 
 | **Total Flagged Alerts** | 148 (0.346%) | **133 (0.311%)** | Manageable operator queue |
 | **Total Cost (₹, Hypo)** | ₹5,925.00 | **₹5,850.00** | **₹75.00 lower financial loss** |
 | **Average Cost / Tx (₹)** | ₹0.138691 | **₹0.136932** | Superior operational efficiency |
+
+> [!NOTE]
+> **Statistical Calibration of Recall Match**: The identical point recall (63/74 = 85.14%) across validation and test splits is an empirical finding on this fixed 70/15/15 stratified partition. With $N=74$ rare fraud cases, the 95% Wilson score confidence interval spans $[75.3\%, 91.6\%]$, and 10-repetition bootstrap resampling exhibits a standard deviation of $\pm 5.07\%$ (ranging from $70.27\%$ to $87.84\%$). While the frozen decision threshold demonstrates strong generalization, the claim of "100% stability" is statistically calibrated here to reflect finite-sample variance.
 
 ![Final Test Confusion Matrix](outputs/visualizations/16_test_confusion_matrix.png)
 
@@ -228,7 +232,7 @@ To guarantee zero data leakage into the downstream LLM-as-a-judge module, the ML
 
 ## 7. Reusable Inference Pipeline (`src/predict.py`)
 
-The ML module provides a production-grade inference engine supporting both programmatic Python usage and command-line execution.
+The ML module provides an end-to-end inference engine supporting both programmatic Python usage and command-line execution for batch scoring and pipeline integration.
 
 ```python
 import pandas as pd
@@ -303,7 +307,7 @@ Evaluated threshold offsets around each model's optimal threshold:
 *Key Methodological Takeaway*: Across resamples, the mean cost gap between T13 and T16 is only **₹32.00**, while the standard deviation is **~₹1,800**. **T13's ₹185 cost advantage on the single validation sample is within the margin of sample variation.**
 
 ### 10.4 Final Governance Recommendation
-> **RETAIN THE BASELINE CATBOOST MODEL IN PRODUCTION (`models/catboost_model.cbm`) AT THRESHOLD 0.144.**  
+> **RETAIN THE BASELINE CATBOOST MODEL AS THE BENCHMARK PIPELINE (`models/catboost_model.cbm`) AT THRESHOLD 0.144.**  
 > If an operational upgrade is desired to reduce alert review fatigue, **T16 (`models/catboost_t16.cbm`)** is the superior operational candidate, cutting false alarms by 28% with 50.8% precision at lower cost than baseline. **Do NOT deploy T13**, as its minor theoretical cost advantage is statistically fragile and imposes a 43% increase in operator workload.
 
 ---

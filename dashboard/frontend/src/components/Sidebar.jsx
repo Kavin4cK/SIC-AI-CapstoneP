@@ -51,3 +51,4 @@ export default function Sidebar({ activeTab, onSelectTab, pendingCount = 0 }) {
     </aside>
   );
 }
+

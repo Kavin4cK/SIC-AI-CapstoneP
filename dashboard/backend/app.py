@@ -181,3 +181,4 @@ def seed_demo_data():
     """Explicitly trigger seed mode to ensure sample predictions are available."""
     did_seed = run_seed_mode_if_needed()
     return {"seeded": did_seed, "message": "Predictions checked/seeded."}
+

@@ -168,3 +168,4 @@ def test_invalid_label_rejected(client):
         json={"TransactionID": "TXN_ERR_001", "label": "maybe", "operator": "analyst"},
     )
     assert response.status_code == 400
+

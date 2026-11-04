@@ -101,3 +101,4 @@ def get_label_map(db_path: Optional[Path] = None) -> Dict[str, Dict[str, Any]]:
     """Return a dictionary mapping transaction_id to label info."""
     labels = get_all_labels(db_path)
     return {item["TransactionID"]: item for item in labels}
+

@@ -17,3 +17,4 @@ seed:
 
 clean:
 	@rm -rf dashboard/frontend/dist dashboard/data/*.sqlite3*
+

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Overview from './components/Overview';
+import DatasetUpload from './components/DatasetUpload';
 import ReviewQueue from './components/ReviewQueue';
 import LabelledCases from './components/LabelledCases';
 import ModelThreshold from './components/ModelThreshold';
@@ -12,11 +13,20 @@ import {
   fetchMetrics,
   fetchFlagsPerHour,
   fetchLabels,
+  fetchAvailableDatasets,
   submitLabel,
 } from './api';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('overview');
+  const [activeDatasetId, setActiveDatasetId] = useState(() => {
+    try {
+      return localStorage.getItem('sic_active_dataset_id') || 'default';
+    } catch {
+      return 'default';
+    }
+  });
+  const [availableDatasets, setAvailableDatasets] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [metrics, setMetrics] = useState(null);
   const [flagsPerHour, setFlagsPerHour] = useState([]);
@@ -41,21 +51,35 @@ export default function App() {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  // Load all initial data from backend
-  const loadDashboardData = useCallback(async (isSilent = false) => {
+  // Handle dataset switching with persistent localStorage context
+  const handleSelectDataset = useCallback((newDatasetId) => {
+    if (!newDatasetId) return;
+    setActiveDatasetId(newDatasetId);
+    try {
+      localStorage.setItem('sic_active_dataset_id', newDatasetId);
+    } catch (err) {
+      console.error('Failed to save active dataset to localStorage:', err);
+    }
+    setSelectedTransactionId(null);
+  }, []);
+
+  // Load all dashboard data isolated to the active dataset
+  const loadDashboardData = useCallback(async (isSilent = false, datasetId = activeDatasetId) => {
     if (!isSilent) setIsLoading(true);
     setIsRefreshing(true);
     try {
-      const [txnsData, metricsData, hourlyData, labelsData] = await Promise.all([
-        fetchTransactions(),
+      const [txnsData, metricsData, hourlyData, labelsData, datasetsData] = await Promise.all([
+        fetchTransactions(null, datasetId),
         fetchMetrics(),
-        fetchFlagsPerHour(),
-        fetchLabels(),
+        fetchFlagsPerHour(datasetId),
+        fetchLabels(datasetId),
+        fetchAvailableDatasets().catch(() => []),
       ]);
       setTransactions(txnsData || []);
       setMetrics(metricsData || null);
       setFlagsPerHour(hourlyData || []);
       setLabels(labelsData || []);
+      setAvailableDatasets(datasetsData || []);
     } catch (err) {
       console.error('Error loading dashboard data:', err);
       addToast(err.message || 'Failed to connect to backend API', 'error');
@@ -63,14 +87,15 @@ export default function App() {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [addToast]);
+  }, [activeDatasetId, addToast]);
 
+  // Reload dashboard data whenever active dataset context changes
   useEffect(() => {
-    loadDashboardData();
-  }, [loadDashboardData]);
+    loadDashboardData(false, activeDatasetId);
+  }, [activeDatasetId]);
 
-  // Optimistic Operator Labeling
-  const handleApplyLabel = async (transactionId, label) => {
+  // Optimistic Operator Labeling with dataset context
+  const handleApplyLabel = async (transactionId, label, targetDatasetId = activeDatasetId) => {
     if (isSubmitting) return;
 
     // Snapshot current state for rollback if needed
@@ -96,9 +121,12 @@ export default function App() {
     );
 
     setLabels((prev) => {
-      const filtered = prev.filter((l) => l.TransactionID !== transactionId);
+      const filtered = prev.filter(
+        (l) => !(l.TransactionID === transactionId && (l.dataset_id || activeDatasetId) === targetDatasetId)
+      );
       return [
         {
+          dataset_id: targetDatasetId,
           TransactionID: transactionId,
           label: cleanLabel,
           operator: 'operator_1',
@@ -110,10 +138,10 @@ export default function App() {
 
     addToast(`Transaction ${transactionId} confirmed as ${cleanLabel}.`, 'success');
 
-    // 2. Perform API call in background
+    // 2. Perform API call in background with target dataset_id
     setIsSubmitting(true);
     try {
-      await submitLabel(transactionId, cleanLabel, 'operator_1');
+      await submitLabel(transactionId, cleanLabel, 'operator_1', targetDatasetId);
     } catch (err) {
       console.error('Failed to submit label to backend:', err);
       // Rollback optimistic update
@@ -142,8 +170,11 @@ export default function App() {
       <div className="main-wrapper">
         <Header
           activeTab={activeTab}
-          onRefresh={() => loadDashboardData(true)}
+          onRefresh={() => loadDashboardData(true, activeDatasetId)}
           isRefreshing={isRefreshing}
+          activeDatasetId={activeDatasetId}
+          onSelectDataset={handleSelectDataset}
+          availableDatasets={availableDatasets}
         />
 
         <main id="main-content">
@@ -160,6 +191,15 @@ export default function App() {
             />
           )}
 
+          {activeTab === 'dataset-upload' && (
+            <DatasetUpload
+              onApplyLabel={handleApplyLabel}
+              isSubmittingLabel={isSubmitting}
+              activeDatasetId={activeDatasetId}
+              onSelectDataset={handleSelectDataset}
+            />
+          )}
+
           {activeTab === 'review' && (
             <ReviewQueue
               transactions={transactions}
@@ -171,7 +211,10 @@ export default function App() {
           )}
 
           {activeTab === 'labelled' && (
-            <LabelledCases labels={labels} />
+            <LabelledCases
+              labels={labels}
+              activeDatasetId={activeDatasetId}
+            />
           )}
 
           {activeTab === 'model' && (
@@ -189,4 +232,3 @@ export default function App() {
     </div>
   );
 }
-

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 
-export default function LabelledCases({ labels = [] }) {
+export default function LabelledCases({ labels = [], activeDatasetId = "default" }) {
   const [filterType, setFilterType] = useState('all'); // 'all', 'fraud', 'genuine'
 
   const filteredLabels = useMemo(() => {
@@ -10,13 +10,13 @@ export default function LabelledCases({ labels = [] }) {
 
   const handleExportCSV = () => {
     if (!labels || labels.length === 0) return;
-    const header = ['TransactionID', 'label', 'operator', 'created_at'].join(',');
-    const rows = labels.map((l) => [l.TransactionID, l.label, l.operator, l.created_at].join(','));
+    const header = ['dataset_id', 'TransactionID', 'label', 'operator', 'created_at'].join(',');
+    const rows = labels.map((l) => [l.dataset_id || activeDatasetId, l.TransactionID, l.label, l.operator, l.created_at].join(','));
     const csvContent = 'data:text/csv;charset=utf-8,' + [header, ...rows].join('\n');
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `operator_labels_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `operator_labels_${activeDatasetId}_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

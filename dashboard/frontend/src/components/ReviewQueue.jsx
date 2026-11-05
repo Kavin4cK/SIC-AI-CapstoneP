@@ -291,21 +291,35 @@ export default function ReviewQueue({
       ) : (
         <div className="card">
           <div className="empty-state">
-            <div className="empty-state-icon">🔍</div>
-            <div className="empty-state-title">No Transactions Match Filter</div>
-            <div className="empty-state-text">
-              Try adjusting your search query or status filter to view transactions.
+            <div className="empty-state-icon">
+              {transactions.length === 0 ? '🛡️' : '🔍'}
             </div>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => {
-                setSearchQuery('');
-                setStatusFilter('all');
-              }}
-            >
-              Reset Filters
-            </button>
+            <div className="empty-state-title">
+              {transactions.length === 0
+                ? 'No suspicious transactions in this dataset.'
+                : transactions.filter((t) => t.assessment_status === 'SUSPICIOUS_PENDING_REVIEW').length === 0 && statusFilter === 'pending'
+                ? 'Review Queue Cleared'
+                : 'No Transactions Match Filter'}
+            </div>
+            <div className="empty-state-text">
+              {transactions.length === 0
+                ? 'All transactions in the active dataset fall below the 0.144 fraud decision threshold.'
+                : transactions.filter((t) => t.assessment_status === 'SUSPICIOUS_PENDING_REVIEW').length === 0 && statusFilter === 'pending'
+                ? 'All suspicious alerts in the active dataset have received operator review.'
+                : 'Try adjusting your search query or status filter to view transactions.'}
+            </div>
+            {transactions.length > 0 && (
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => {
+                  setSearchQuery('');
+                  setStatusFilter('all');
+                }}
+              >
+                Reset Filters
+              </button>
+            )}
           </div>
         </div>
       )}

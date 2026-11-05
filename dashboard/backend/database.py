@@ -1,5 +1,6 @@
 """SQLite storage layer for operator review labels.
 Guarantees persistent separation between prediction outputs and operator decisions.
+Supports multi-dataset isolation with (dataset_id, transaction_id) composite keys.
 Never writes to or overwrites ML prediction files.
 """
 
@@ -22,51 +23,87 @@ def get_db_connection(db_path: Optional[Path] = None) -> sqlite3.Connection:
 
 
 def init_db(db_path: Optional[Path] = None) -> None:
-    """Initialize SQLite tables for operator feedback."""
+    """Initialize SQLite tables for operator feedback, with automatic schema migration."""
     with get_db_connection(db_path) as conn:
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS operator_labels (
-                transaction_id TEXT PRIMARY KEY,
-                label TEXT NOT NULL CHECK(label IN ('fraud', 'genuine', 'CONFIRMED_FRAUD', 'CONFIRMED_GENUINE')),
-                operator TEXT NOT NULL,
-                created_at TEXT NOT NULL
-            );
-            """
-        )
-        conn.commit()
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='operator_labels'")
+        table_exists = cursor.fetchone() is not None
+
+        if table_exists:
+            cursor.execute("PRAGMA table_info(operator_labels)")
+            columns = [row["name"] for row in cursor.fetchall()]
+            if "dataset_id" not in columns:
+                # Migrate to compound primary key (dataset_id, transaction_id)
+                cursor.execute(
+                    """
+                    CREATE TABLE operator_labels_new (
+                        dataset_id TEXT NOT NULL DEFAULT 'default',
+                        transaction_id TEXT NOT NULL,
+                        label TEXT NOT NULL CHECK(label IN ('fraud', 'genuine', 'CONFIRMED_FRAUD', 'CONFIRMED_GENUINE')),
+                        operator TEXT NOT NULL,
+                        created_at TEXT NOT NULL,
+                        PRIMARY KEY (dataset_id, transaction_id)
+                    );
+                    """
+                )
+                cursor.execute(
+                    """
+                    INSERT OR IGNORE INTO operator_labels_new (dataset_id, transaction_id, label, operator, created_at)
+                    SELECT 'default', transaction_id, label, operator, created_at FROM operator_labels;
+                    """
+                )
+                cursor.execute("DROP TABLE operator_labels")
+                cursor.execute("ALTER TABLE operator_labels_new RENAME TO operator_labels")
+                conn.commit()
+        else:
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS operator_labels (
+                    dataset_id TEXT NOT NULL DEFAULT 'default',
+                    transaction_id TEXT NOT NULL,
+                    label TEXT NOT NULL CHECK(label IN ('fraud', 'genuine', 'CONFIRMED_FRAUD', 'CONFIRMED_GENUINE')),
+                    operator TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    PRIMARY KEY (dataset_id, transaction_id)
+                );
+                """
+            )
+            conn.commit()
 
 
 def save_label(
     transaction_id: str,
     label: str,
     operator: Optional[str] = None,
+    dataset_id: Optional[str] = "default",
     db_path: Optional[Path] = None,
 ) -> Dict[str, Any]:
-    """Insert or update an operator decision for a transaction."""
+    """Insert or update an operator decision for a transaction within a specific dataset."""
     init_db(db_path)
     clean_label = label.strip().lower()
     if clean_label not in ("fraud", "genuine"):
         raise ValueError(f"Invalid label '{label}'. Allowed: 'fraud', 'genuine'")
 
+    clean_dataset_id = (dataset_id or "default").strip() or "default"
     op_name = (operator or "operator").strip() or "operator"
     now_iso = datetime.now(timezone.utc).isoformat()
 
     with get_db_connection(db_path) as conn:
         conn.execute(
             """
-            INSERT INTO operator_labels (transaction_id, label, operator, created_at)
-            VALUES (?, ?, ?, ?)
-            ON CONFLICT(transaction_id) DO UPDATE SET
+            INSERT INTO operator_labels (dataset_id, transaction_id, label, operator, created_at)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(dataset_id, transaction_id) DO UPDATE SET
                 label=excluded.label,
                 operator=excluded.operator,
                 created_at=excluded.created_at;
             """,
-            (transaction_id, clean_label, op_name, now_iso),
+            (clean_dataset_id, transaction_id, clean_label, op_name, now_iso),
         )
         conn.commit()
 
     return {
+        "dataset_id": clean_dataset_id,
         "TransactionID": transaction_id,
         "label": clean_label,
         "operator": op_name,
@@ -74,20 +111,35 @@ def save_label(
     }
 
 
-def get_all_labels(db_path: Optional[Path] = None) -> List[Dict[str, Any]]:
-    """Retrieve all recorded operator labels ordered by created_at desc."""
+def get_all_labels(
+    dataset_id: Optional[str] = None,
+    db_path: Optional[Path] = None,
+) -> List[Dict[str, Any]]:
+    """Retrieve recorded operator labels, optionally filtered by dataset_id."""
     init_db(db_path)
     with get_db_connection(db_path) as conn:
-        cursor = conn.execute(
-            """
-            SELECT transaction_id, label, operator, created_at
-            FROM operator_labels
-            ORDER BY created_at DESC;
-            """
-        )
+        if dataset_id and dataset_id.strip() and dataset_id.strip().lower() != "all":
+            cursor = conn.execute(
+                """
+                SELECT dataset_id, transaction_id, label, operator, created_at
+                FROM operator_labels
+                WHERE dataset_id = ?
+                ORDER BY created_at DESC;
+                """,
+                (dataset_id.strip(),),
+            )
+        else:
+            cursor = conn.execute(
+                """
+                SELECT dataset_id, transaction_id, label, operator, created_at
+                FROM operator_labels
+                ORDER BY created_at DESC;
+                """
+            )
         rows = cursor.fetchall()
         return [
             {
+                "dataset_id": row["dataset_id"],
                 "TransactionID": row["transaction_id"],
                 "label": row["label"],
                 "operator": row["operator"],
@@ -97,8 +149,10 @@ def get_all_labels(db_path: Optional[Path] = None) -> List[Dict[str, Any]]:
         ]
 
 
-def get_label_map(db_path: Optional[Path] = None) -> Dict[str, Dict[str, Any]]:
-    """Return a dictionary mapping transaction_id to label info."""
-    labels = get_all_labels(db_path)
+def get_label_map(
+    dataset_id: Optional[str] = None,
+    db_path: Optional[Path] = None,
+) -> Dict[str, Dict[str, Any]]:
+    """Return a dictionary mapping transaction_id to label info for the specified dataset."""
+    labels = get_all_labels(dataset_id=dataset_id, db_path=db_path)
     return {item["TransactionID"]: item for item in labels}
-

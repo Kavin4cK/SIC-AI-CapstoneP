@@ -2,6 +2,7 @@ import React from 'react';
 
 const NAV_ITEMS = [
   { id: 'overview', label: 'Overview', icon: '📊' },
+  { id: 'dataset-upload', label: 'Dataset Upload & Fraud Detection', icon: '🚀' },
   { id: 'review', label: 'Review queue', icon: '🔍', showBadge: true },
   { id: 'labelled', label: 'Labelled cases', icon: '🏷️' },
   { id: 'model', label: 'Model and threshold', icon: '⚙️' },
@@ -51,4 +52,3 @@ export default function Sidebar({ activeTab, onSelectTab, pendingCount = 0 }) {
     </aside>
   );
 }
-

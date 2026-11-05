@@ -890,3 +890,230 @@ select:focus-visible,
   border-color: var(--color-teal);
 }
 
+
+/* ==========================================================================
+   Dataset Upload & Fraud Detection Styles
+   ========================================================================== */
+
+.dataset-mode-tabs {
+  display: flex;
+  gap: 16px;
+}
+
+.dataset-tab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  background: var(--color-card-bg);
+  border: 2px solid var(--color-card-border);
+  border-radius: var(--radius-card);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--color-text-main);
+}
+
+.dataset-tab-btn:hover {
+  border-color: #CBD5E1;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.dataset-tab-btn.active {
+  border-color: var(--color-teal);
+  background: #F0FDF4;
+  box-shadow: 0 4px 12px rgba(15, 61, 62, 0.08);
+}
+
+.tab-icon {
+  font-size: 28px;
+}
+
+.compatibility-notice {
+  background: #FEF3C7;
+  border: 1px solid #FCD34D;
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: #92400E;
+}
+
+.compatibility-title {
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: #78350F;
+}
+
+.dropzone {
+  border: 2px dashed #CBD5E1;
+  border-radius: var(--radius-card);
+  padding: 40px 24px;
+  text-align: center;
+  background: #F8FAFC;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dropzone:hover {
+  border-color: var(--color-amber);
+  background: #FFFBEB;
+}
+
+.dropzone-active {
+  border-color: var(--color-amber);
+  background: #FEF3C7;
+}
+
+.alert-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+}
+
+.alert-danger {
+  background: var(--color-fraud-bg);
+  border: 1px solid var(--color-fraud-border);
+  color: var(--color-fraud);
+}
+
+.evaluation-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 16px;
+}
+
+@media (max-width: 900px) {
+  .evaluation-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cm-container {
+  background: #F8FAFC;
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+.cm-header-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.cm-table {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.cm-cell {
+  padding: 16px 12px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.cm-tp {
+  background: #DCFCE7;
+  border: 1px solid #86EFAC;
+}
+
+.cm-fp {
+  background: #FEF3C7;
+  border: 1px solid #FDE68A;
+}
+
+.cm-fn {
+  background: #FEE2E2;
+  border: 1px solid #FCA5A5;
+}
+
+.cm-tn {
+  background: #F1F5F9;
+  border: 1px solid #CBD5E1;
+}
+
+.cm-val {
+  font-size: 22px;
+  font-weight: 700;
+  font-family: var(--font-heading);
+  color: #0F172A;
+}
+
+.cm-tag {
+  font-size: 11px;
+  color: #475569;
+  margin-top: 4px;
+}
+
+.metrics-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: #F8FAFC;
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+}
+
+.metric-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-card-border);
+  font-size: 14px;
+}
+
+.metric-name {
+  color: var(--color-text-muted);
+}
+
+.metric-val {
+  font-family: var(--font-heading);
+  font-size: 16px;
+}
+
+.pagination-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  border-top: 1px solid var(--color-card-border);
+  background: #F8FAFC;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background: #FFFFFF;
+  border-radius: var(--radius-card);
+  max-width: 650px;
+  width: 100%;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}

@@ -21,9 +21,10 @@ Returns service status and active predictions file location.
 ```
 
 ### `GET /transactions`
-Fetches scored transactions sorted strictly by `fraud_probability` descending.
+Fetches scored transactions sorted strictly by `fraud_probability` descending, strictly isolated to the specified active `dataset_id`.
 - **Query Params:**
   - `status` *(optional, string)*: `'pending'` (or `'suspicious_pending_review'`), `'fraud'` (`'confirmed_fraud'`), `'genuine'` (`'confirmed_genuine'`), or `'all'`. Default: all.
+  - `dataset_id` *(optional, string)*: Unique dataset ID (e.g. `'default'`, `'ulb_benchmark'`, `'ds_...'`). If omitted, defaults to `'default'`. Only returns suspicious transactions (fraud_probability >= 0.144) or operator-labelled transactions.
 - **Response (200 OK):**
 ```json
 [
@@ -66,8 +67,9 @@ Dynamically reads audited test/validation metrics from `outputs/evaluation/final
 ```
 
 ### `GET /flags-per-hour`
-Hourly flagged alerts distribution across elapsed seconds (`int(time // 3600)`).
-- **Query Params / Body:** None
+Hourly flagged alerts distribution across elapsed seconds (`int(time // 3600)`), isolated by dataset.
+- **Query Params:**
+  - `dataset_id` *(optional, string)*: Active dataset ID.
 - **Response (200 OK):**
 ```json
 [
@@ -85,7 +87,8 @@ Persists operator or LLM adjudication. Never mutates input predictions CSV.
 {
   "TransactionID": "TEST_TXN_0001",
   "label": "fraud",
-  "operator": "llm_judge_v1"
+  "operator": "llm_judge_v1",
+  "dataset_id": "default"
 }
 ```
 *Validation:* `label` must be `"fraud"` or `"genuine"` (case-insensitive). Invalid values return `400 Bad Request`. `operator` defaults to `"operator_1"` if omitted.
@@ -104,8 +107,9 @@ Persists operator or LLM adjudication. Never mutates input predictions CSV.
 ```
 
 ### `GET /labels`
-Retrieves all recorded review decisions ordered by `created_at DESC`.
-- **Query Params / Body:** None
+Retrieves recorded operator decisions ordered by `created_at DESC`, filtered by active `dataset_id`.
+- **Query Params:**
+  - `dataset_id` *(optional, string)*: Filter decisions strictly to this dataset ID.
 - **Response (200 OK):**
 ```json
 [
@@ -119,16 +123,49 @@ Retrieves all recorded review decisions ordered by `created_at DESC`.
 ```
 
 ### `GET /labels/export.csv`
-Streams all recorded labels as standard RFC 4180 CSV attachment (`operator_labels.csv`).
+Streams recorded labels as standard RFC 4180 CSV attachment (`operator_labels.csv`), filtered by `dataset_id`.
+- **Query Params:**
+  - `dataset_id` *(optional, string)*: Filter exported labels strictly to this dataset.
 - **Response (200 OK, text/csv):**
 ```csv
-TransactionID,label,operator,created_at
-TEST_TXN_0001,fraud,llm_judge_v1,2026-11-04T18:49:23.506597+00:00
+dataset_id,TransactionID,label,operator,created_at
+default,TEST_TXN_0001,fraud,llm_judge_v1,2026-11-04T18:49:23.506597+00:00
 ```
 
 ### `POST /seed`
 Idempotent trigger: if predictions CSV is absent, executes `src/predict.py` on `outputs/predictions/sample_input.csv`.
 - **Response (200 OK):** `{"seeded": false, "message": "Predictions checked/seeded."}`
+
+### `GET /datasets`
+Lists all available datasets in the current session (default benchmark, original ULB dataset, and user uploads).
+- **Response (200 OK):** Array of dataset objects containing `dataset_id`, `filename`, `total_rows`, `is_predicted`, `has_class`.
+
+### `POST /datasets/upload`
+Uploads and validates a credit card transactions CSV dataset (strictly 30 numerical features: Time, Amount, V1–V28; optional TransactionID and Class).
+- **Form Data:** `file` (multipart CSV file up to 250 MB, <= 350,000 rows)
+- **Response (200 OK):** `DatasetUploadResponse` with `dataset_id`, row counts, feature validation status, and 5 preview rows.
+
+### `POST /datasets/use-existing`
+Loads the original ULB benchmark dataset (`data/creditcard.csv`, 284,807 transactions).
+- **Response (200 OK):** `DatasetUploadResponse` with `dataset_id: "ulb_benchmark"`.
+
+### `POST /datasets/{dataset_id}/predict`
+Executes batch inference using the frozen CatBoost model (`models/catboost_model.cbm`) and preprocessor at threshold 0.144.
+- **Query Params:** `threshold` (default 0.144)
+- **Response (200 OK):** `PredictionResponse` containing summary KPI counts, probability histogram & risk charts, and optional ground-truth metrics (TP, FP, FN, TN, precision, recall, F1, ROC-AUC, PR-AUC) if `Class` is present.
+
+### `GET /datasets/{dataset_id}/results`
+Fetches paginated, filtered, and sorted transaction predictions with operator feedback status overlaid.
+- **Query Params:** `page`, `page_size`, `status` ('all', 'suspicious', 'not_flagged', 'fraud', 'genuine'), `search`, `sort_by`, `sort_order`.
+- **Response (200 OK):** `DatasetResultsResponse`.
+
+### `GET /datasets/{dataset_id}/download`
+Streams the complete results CSV attachment containing all original columns plus `fraud_probability`, `selected_threshold`, `selected_model`, `prediction_label`, and `assessment_status`.
+- **Response (200 OK, text/csv):** RFC 4180 CSV attachment preserving original row order.
+
+### `GET /datasets/template.csv`
+Streams a standard CSV template containing all 30 required model features plus sample rows.
+- **Response (200 OK, text/csv):** Downloadable `credit_card_transactions_template.csv`.
 
 ---
 
